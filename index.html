@@ -171,6 +171,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     <div class="card" id="bookCard">
       <div>
         <div class="step-label" data-i="step1"></div>
+        <div class="hint" data-i="multi" style="margin:-4px 0 10px"></div>
         <div class="chips" id="svcChips"></div>
       </div>
       <div>
@@ -200,7 +201,8 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <script>
 (function () {
   var tg = window.Telegram && window.Telegram.WebApp;
-  var inTg = !!(tg && tg.initData);
+  // Pastki tugma (reply keyboard) orqali ochilganda initData bo'sh bo'ladi, shuning uchun platform bo'yicha aniqlaymiz
+  var inTg = !!(tg && tg.platform && tg.platform !== "unknown");
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
   if (inTg) document.documentElement.classList.add("tg");
   if (tg && tg.colorScheme) document.documentElement.setAttribute("data-theme", tg.colorScheme === "dark" ? "dark" : "light");
@@ -218,7 +220,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       priceNote: "Narxlar so’mda", min: "daqiqa", book: "Bron qilish", cur: "so’m",
       bookEyebrow: "Onlayn yozilish", bookTitle: "Bron qilish",
       step1: "1 · Xizmat", step2: "2 · Kun", step3: "3 · Vaqt",
-      lblName: "Ismingiz", phName: "Masalan, Aziz", lblPhone: "Telefon",
+      multi: "Bir nechtasini tanlash mumkin", lblName: "Ismingiz", phName: "Masalan, Aziz", lblPhone: "Telefon",
       today: "Bugun", pickDay: "Avval kunni tanlang", noSlots: "Bu kunga bo’sh vaqt qolmadi",
       sumEmpty: "Xizmat, kun va vaqtni tanlang", sumSvc: "Kun va vaqtni tanlang",
       errSvc: "Xizmatni tanlang.", errDay: "Kunni tanlang.", errTime: "Vaqtni tanlang.",
@@ -241,7 +243,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       priceNote: "Цены в сумах", min: "мин", book: "Записаться", cur: "сум",
       bookEyebrow: "Онлайн-запись", bookTitle: "Запись",
       step1: "1 · Услуга", step2: "2 · День", step3: "3 · Время",
-      lblName: "Ваше имя", phName: "Например, Азиз", lblPhone: "Телефон",
+      multi: "Можно выбрать несколько", lblName: "Ваше имя", phName: "Например, Азиз", lblPhone: "Телефон",
       today: "Сегодня", pickDay: "Сначала выберите день", noSlots: "На этот день свободного времени нет",
       sumEmpty: "Выберите услугу, день и время", sumSvc: "Выберите день и время",
       errSvc: "Выберите услугу.", errDay: "Выберите день.", errTime: "Выберите время.",
@@ -264,7 +266,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       priceNote: "Prices in UZS", min: "min", book: "Book", cur: "UZS",
       bookEyebrow: "Online booking", bookTitle: "Book a visit",
       step1: "1 · Service", step2: "2 · Day", step3: "3 · Time",
-      lblName: "Your name", phName: "e.g. Aziz", lblPhone: "Phone",
+      multi: "You can pick several", lblName: "Your name", phName: "e.g. Aziz", lblPhone: "Phone",
       today: "Today", pickDay: "Pick a day first", noSlots: "No free time left on this day",
       sumEmpty: "Pick a service, day and time", sumSvc: "Pick a day and time",
       errSvc: "Pick a service.", errDay: "Pick a day.", errTime: "Pick a time.",
@@ -305,7 +307,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     for (var i = 0; i < cand.length; i++) { if (cand[i] && T[cand[i]]) return cand[i]; }
     return "uz";
   }
-  var state = { lang: pickLang(), svc: null, day: null, time: null };
+  var state = { lang: pickLang(), svcs: [], day: null, time: null };
   function t(k) { return T[state.lang][k]; }
 
   var today = new Date();
@@ -318,7 +320,13 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
   function daySub(i) { return days[i].date.getDate() + " " + t("months")[days[i].date.getMonth()]; }
 
   /* 30-minute cells; a service takes ceil(min/30) cells in a row */
-  function cellsNeeded() { var s = state.svc ? svcById(state.svc) : null; return s ? Math.ceil(s.min / 30) : 1; }
+  function totals() {
+    var min = 0, price = 0;
+    state.svcs.forEach(function (id) { var x = svcById(id); min += x.min; price += x.price; });
+    return { min: min, price: price };
+  }
+  function svcNames() { return state.svcs.map(function (id) { return t("svc")[id]; }).join(" + "); }
+  function cellsNeeded() { return Math.max(1, Math.ceil(totals().min / 30)); }
   function slotsFor(i) {
     var day = days[i], dow = day.date.getDay();
     var open = dow === 0 ? 11 * 60 : 10 * 60, close = dow === 0 ? 18 * 60 : 21 * 60;
@@ -370,14 +378,18 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     }).join("");
   }
   function sync() {
-    Array.prototype.forEach.call(document.querySelectorAll("#svcChips .chip"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-svc") === state.svc)); });
+    Array.prototype.forEach.call(document.querySelectorAll("#svcChips .chip"), function (b) { b.setAttribute("aria-pressed", String(state.svcs.indexOf(b.getAttribute("data-svc")) !== -1)); });
     Array.prototype.forEach.call(document.querySelectorAll("#dayChips .chip"), function (b) { b.setAttribute("aria-pressed", String(state.day !== null && +b.getAttribute("data-day") === state.day)); });
     renderSlots();
-    var s = state.svc ? svcById(state.svc) : null, el = $("sum");
-    if (s && state.day !== null && state.time) {
-      el.innerHTML = esc(t("svc")[s.id]) + ' · ' + esc(daySub(state.day)) + ' · ' + state.time + '<br><b>' + fmt(s.price) + ' ' + esc(t("cur")) + '</b>';
-    } else if (s) {
-      el.innerHTML = esc(t("svc")[s.id]) + ' · <b>' + fmt(s.price) + ' ' + esc(t("cur")) + '</b>. ' + esc(t("sumSvc"));
+    var el = $("sum");
+    if (state.svcs.length) {
+      var tt = totals();
+      var price = '<b>' + fmt(tt.price) + ' ' + esc(t("cur")) + '</b> · ' + tt.min + ' ' + esc(t("min"));
+      if (state.day !== null && state.time) {
+        el.innerHTML = esc(svcNames()) + '<br>' + esc(daySub(state.day)) + ' · ' + state.time + '<br>' + price;
+      } else {
+        el.innerHTML = esc(svcNames()) + '<br>' + price + '<br>' + esc(t("sumSvc"));
+      }
     } else {
       el.textContent = t("sumEmpty");
     }
@@ -391,7 +403,15 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     if (b.hasAttribute("data-lang")) {
       state.lang = b.getAttribute("data-lang"); safeSet("lang", state.lang); renderAll();
     } else if (b.hasAttribute("data-svc")) {
-      state.svc = b.getAttribute("data-svc"); sync();
+      var id = b.getAttribute("data-svc"), at = state.svcs.indexOf(id);
+      if (b.classList.contains("go")) {
+        if (at === -1) state.svcs.push(id);
+      } else if (at === -1) {
+        state.svcs.push(id);
+      } else {
+        state.svcs.splice(at, 1);
+      }
+      sync();
       if (b.classList.contains("go")) $("bron").scrollIntoView();
     } else if (b.hasAttribute("data-day")) {
       state.day = +b.getAttribute("data-day"); state.time = null; sync();
@@ -409,7 +429,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     var name = $("nm").value.trim();
     var digits = $("ph").value.replace(/\D/g, "");
     var err = "";
-    if (!state.svc) err = t("errSvc");
+    if (!state.svcs.length) err = t("errSvc");
     else if (state.day === null) err = t("errDay");
     else if (!state.time) err = t("errTime");
     else if (name.length < 2) err = t("errName");
@@ -419,17 +439,17 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       if (inTg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred("error"); } catch (e) {} }
       return;
     }
-    var payload = { v: 1, svc: state.svc, date: days[state.day].key, time: state.time, name: name, phone: normalizePhone(digits), lang: state.lang };
+    var payload = { v: 2, svcs: state.svcs.slice(), date: days[state.day].key, time: state.time, name: name, phone: normalizePhone(digits), lang: state.lang };
     if (inTg) {
       try { tg.sendData(JSON.stringify(payload)); } catch (e) { $("err").textContent = String(e); }
       return;
     }
-    var s = svcById(state.svc);
+    var tt = totals();
     $("bookCard").innerHTML = '<div class="done"><h3>' + esc(t("doneTitle")) + '</h3><dl>' +
       '<dt>' + esc(t("dName")) + '</dt><dd>' + esc(name) + '</dd>' +
-      '<dt>' + esc(t("dSvc")) + '</dt><dd>' + esc(t("svc")[s.id]) + ' (' + s.min + ' ' + esc(t("min")) + ')</dd>' +
+      '<dt>' + esc(t("dSvc")) + '</dt><dd>' + esc(svcNames()) + ' (' + tt.min + ' ' + esc(t("min")) + ')</dd>' +
       '<dt>' + esc(t("dWhen")) + '</dt><dd>' + esc(dayLabel(state.day)) + ', ' + esc(daySub(state.day)) + ', ' + state.time + '</dd>' +
-      '<dt>' + esc(t("dPrice")) + '</dt><dd>' + fmt(s.price) + ' ' + esc(t("cur")) + '</dd></dl></div>';
+      '<dt>' + esc(t("dPrice")) + '</dt><dd>' + fmt(tt.price) + ' ' + esc(t("cur")) + '</dd></dl></div>';
   }
   $("submit").addEventListener("click", submit);
   if (inTg && tg.MainButton) { try { tg.MainButton.show(); tg.MainButton.onClick(submit); } catch (e) {} }
@@ -441,4 +461,5 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 })();
 </script>
 </body>
+</html>
 </html>
