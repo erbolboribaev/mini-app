@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Qaychi</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky header (brand + language switch + 3 tabs), then three stacked sections: usta, xizmatlar, bron. */
+:root {
+  --bg: #EEF0EC;
+  --surface: #FFFFFF;
+  --fg: #14201C;
+  --muted: #5B6862;
+  --line: #D3D9D3;
+  --accent: #C0322B;
+  --accent-fg: #FFFFFF;
+  --pole: #2B4C8C;
+  --ok: #1F7A4D;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --surface: #1A2320; --fg: #ECEFEA; --muted: #98A59E; --line: #2C3833;
+    --accent: #E5594F; --accent-fg: #14201C; --pole: #7C9BDB; --ok: #5CC38E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --surface: #1A2320; --fg: #ECEFEA; --muted: #98A59E; --line: #2C3833;
+  --accent: #E5594F; --accent-fg: #14201C; --pole: #7C9BDB; --ok: #5CC38E; color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding: 0 16px 110px;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 800; line-height: 1; text-wrap: balance; margin: 0; letter-spacing: 0.01em; text-transform: uppercase; }
+p { margin: 0; }
+.wrap { max-width: 720px; margin: 0 auto; }
+
+/* header */
+.top { position: sticky; top: 0; z-index: 9; background: var(--bg); margin: 0 -16px; padding: 10px 16px 0; }
+.top-in { max-width: 720px; margin: 0 auto; display: grid; gap: 6px; padding-bottom: 10px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 26px; text-transform: uppercase; letter-spacing: 0.04em; }
+.langs { display: flex; gap: 4px; }
+.langs button {
+  font: inherit; font-family: var(--font-mono); font-size: 12px; color: var(--fg); background: transparent;
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; cursor: pointer; min-height: 32px;
+}
+.langs button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.tabs { display: flex; gap: 4px; margin-left: -12px; }
+.tabs a { color: var(--fg); text-decoration: none; font-weight: 500; font-size: 14px; padding: 8px 12px; border-radius: 6px; border: 1px solid transparent; }
+.tabs a:hover { border-color: var(--line); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stripe {
+  height: 8px; margin: 0 -16px;
+  background: repeating-linear-gradient(-45deg, var(--accent) 0 10px, var(--surface) 10px 20px, var(--pole) 20px 30px, var(--surface) 30px 40px);
+  border-block: 1px solid var(--line);
+}
+
+section { padding-block: 36px 8px; scroll-margin-top: 110px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+/* usta */
+.hero h1 { font-size: clamp(48px, 13vw, 84px); }
+.hero h1 span { color: var(--accent); }
+.hero .lead { margin-top: 16px; max-width: 52ch; color: var(--muted); font-size: 17px; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 24px; border-block: 1px solid var(--line); }
+.facts div { padding: 14px 12px 14px 0; }
+.facts div + div { padding-left: 14px; border-left: 1px solid var(--line); }
+.facts b { display: block; font-family: var(--font-display); font-size: 34px; font-weight: 800; line-height: 1; }
+.facts small { color: var(--muted); font-size: 13px; }
+.bio { margin-top: 24px; display: grid; gap: 14px; max-width: 60ch; }
+.hours { margin-top: 20px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+/* xizmatlar */
+h2 { font-size: clamp(34px, 8vw, 48px); }
+.svc { list-style: none; margin: 20px 0 0; padding: 0; border-top: 2px solid var(--fg); }
+.svc li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.svc .name { font-weight: 600; }
+.svc .meta { color: var(--muted); font-size: 14px; }
+.svc .price { font-family: var(--font-mono); font-weight: 500; text-align: right; }
+.svc .go { grid-column: 2; justify-self: end; }
+.link-btn { background: none; border: 0; padding: 4px 0; color: var(--accent); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* bron */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-top: 20px; display: grid; gap: 22px; }
+.step-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: 14px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; cursor: pointer; text-align: left; min-height: 44px; }
+.chip small { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.chip[aria-pressed="true"] small { color: var(--bg); opacity: 0.8; }
+.chip:disabled { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.slots .chip { text-align: center; font-family: var(--font-mono); padding: 10px 4px; }
+.hint { color: var(--muted); font-size: 14px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label { font-weight: 600; font-size: 14px; }
+.field input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; width: 100%; min-height: 46px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.err { color: var(--accent); font-size: 14px; min-height: 20px; }
+.summary { border-top: 1px dashed var(--line); padding-top: 16px; display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; }
+.summary .sum { min-width: 0; font-size: 15px; }
+.summary .sum b { font-family: var(--font-mono); }
+.cta { font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 6px; padding: 14px 22px; cursor: pointer; min-height: 48px; }
+.tg .cta { display: none; }
+.done { display: grid; gap: 14px; }
+.done h3 { font-size: 36px; color: var(--ok); }
+.done dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; }
+.done dt { color: var(--muted); }
+.done dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.note { margin-top: 14px; font-size: 13px; color: var(--muted); }
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="row">
+      <div class="brand">Qaychi</div>
+      <div class="langs" role="group" aria-label="Language">
+        <button type="button" data-lang="uz" aria-pressed="false">UZ</button>
+        <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <nav class="tabs">
+      <a href="#usta" data-i="navUsta"></a>
+      <a href="#xizmatlar" data-i="navSvc"></a>
+      <a href="#bron" data-i="navBook"></a>
+    </nav>
+  </div>
+  <div class="stripe" aria-hidden="true"></div>
+</header>
+
+<main class="wrap">
+  <section id="usta" class="hero">
+    <div class="eyebrow" data-i="shop"></div>
+    <h1><span data-i="h1a" style="color:inherit"></span><br><span data-i="h1b"></span></h1>
+    <p class="lead" data-i="lead"></p>
+    <div class="facts">
+      <div><b>12</b><small data-i="f1"></small></div>
+      <div><b>8 000+</b><small data-i="f2"></small></div>
+      <div><b>4.9</b><small data-i="f3"></small></div>
+    </div>
+    <div class="bio">
+      <p data-i="bio1"></p>
+      <p data-i="bio2"></p>
+    </div>
+    <p class="hours" data-i="hours"></p>
+  </section>
+
+  <section id="xizmatlar">
+    <div class="eyebrow" data-i="priceNote"></div>
+    <h2 data-i="navSvc"></h2>
+    <ul class="svc" id="svcList"></ul>
+  </section>
+
+  <section id="bron">
+    <div class="eyebrow" data-i="bookEyebrow"></div>
+    <h2 data-i="bookTitle"></h2>
+    <div class="card" id="bookCard">
+      <div>
+        <div class="step-label" data-i="step1"></div>
+        <div class="chips" id="svcChips"></div>
+      </div>
+      <div>
+        <div class="step-label" data-i="step2"></div>
+        <div class="chips" id="dayChips"></div>
+      </div>
+      <div>
+        <div class="step-label" data-i="step3"></div>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="nm" data-i="lblName"></label><input id="nm" type="text" autocomplete="name" maxlength="40" data-ph="phName"></div>
+        <div class="field"><label for="ph" data-i="lblPhone"></label><input id="ph" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="90 123 45 67"></div>
+      </div>
+      <div class="err" id="err" role="alert"></div>
+      <div class="summary">
+        <div class="sum" id="sum"></div>
+        <button class="cta" id="submit" type="button" data-i="cta"></button>
+      </div>
+    </div>
+    <p class="note" id="demoNote" hidden data-i="demoNote"></p>
+  </section>
+
+  <footer><span data-i="footL"></span><span data-i="footR"></span></footer>
+</main>
+
+<script>
+(function () {
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var inTg = !!(tg && tg.initData);
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+  if (inTg) document.documentElement.classList.add("tg");
+  if (tg && tg.colorScheme) document.documentElement.setAttribute("data-theme", tg.colorScheme === "dark" ? "dark" : "light");
+
+  /* ---------- translations ---------- */
+  var T = {
+    uz: {
+      navUsta: "Usta", navSvc: "Xizmatlar", navBook: "Bron",
+      shop: "Sartaroshxona · Toshkent", h1a: "Toza soch.", h1b: "Aniq chiziq.",
+      lead: "Men Jasur Karimov, 2014-yildan beri sartaroshman. Har bir mijozga alohida vaqt ajrataman, shoshilmasdan ishlayman.",
+      f1: "yillik tajriba", f2: "mijoz", f3: "o’rtacha baho",
+      bio1: "Ishni Chilonzordagi kichik xonada boshlaganman. Keyin Istanbulda klassik soqol olish va fade usulida soch olish kurslarini tugatdim.",
+      bio2: "Yolg’iz ishlayman, shuning uchun bron qilgan vaqtingizda kutmaysiz. Ustara bilan soqol olish va zamonaviy soch turmaklari menga yaxshi tanish.",
+      hours: "Dush–Shan 10:00–21:00 · Yakshanba 11:00–18:00",
+      priceNote: "Narxlar so’mda", min: "daqiqa", book: "Bron qilish", cur: "so’m",
+      bookEyebrow: "Onlayn yozilish", bookTitle: "Bron qilish",
+      step1: "1 · Xizmat", step2: "2 · Kun", step3: "3 · Vaqt",
+      lblName: "Ismingiz", phName: "Masalan, Aziz", lblPhone: "Telefon",
+      today: "Bugun", pickDay: "Avval kunni tanlang", noSlots: "Bu kunga bo’sh vaqt qolmadi",
+      sumEmpty: "Xizmat, kun va vaqtni tanlang", sumSvc: "Kun va vaqtni tanlang",
+      errSvc: "Xizmatni tanlang.", errDay: "Kunni tanlang.", errTime: "Vaqtni tanlang.",
+      errName: "Ismingizni yozing.", errPhone: "Telefon raqamini to’liq yozing.",
+      cta: "Bron qilish", demoNote: "Telegramdan tashqarida bu namuna rejimi: bron ustaga yuborilmaydi.",
+      doneTitle: "Namuna: bron tayyor", dName: "Ism", dSvc: "Xizmat", dWhen: "Vaqt", dPrice: "Narx",
+      footL: "Qaychi sartaroshxonasi", footR: "Chilonzor, Toshkent",
+      days: ["Yak", "Dush", "Sesh", "Chor", "Pay", "Jum", "Shan"],
+      months: ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"],
+      svc: { soch: "Soch olish", soqol: "Soqol olish", kombo: "Soch + soqol", bola: "Bolalar sochi", yuv: "Yuvish va turmaklash" }
+    },
+    ru: {
+      navUsta: "Мастер", navSvc: "Услуги", navBook: "Запись",
+      shop: "Барбершоп · Ташкент", h1a: "Чистая стрижка.", h1b: "Чёткая линия.",
+      lead: "Я Жасур Каримов, работаю барбером с 2014 года. Для каждого клиента выделяю отдельное время и не тороплюсь.",
+      f1: "лет опыта", f2: "клиентов", f3: "средняя оценка",
+      bio1: "Начинал в маленькой комнате в Чиланзаре. Затем закончил в Стамбуле курсы классического бритья и стрижки в стиле фейд.",
+      bio2: "Работаю один, поэтому в записанное время вам не придётся ждать. Бритьё опасной бритвой и современные стрижки — моя специальность.",
+      hours: "Пн–Сб 10:00–21:00 · Вс 11:00–18:00",
+      priceNote: "Цены в сумах", min: "мин", book: "Записаться", cur: "сум",
+      bookEyebrow: "Онлайн-запись", bookTitle: "Запись",
+      step1: "1 · Услуга", step2: "2 · День", step3: "3 · Время",
+      lblName: "Ваше имя", phName: "Например, Азиз", lblPhone: "Телефон",
+      today: "Сегодня", pickDay: "Сначала выберите день", noSlots: "На этот день свободного времени нет",
+      sumEmpty: "Выберите услугу, день и время", sumSvc: "Выберите день и время",
+      errSvc: "Выберите услугу.", errDay: "Выберите день.", errTime: "Выберите время.",
+      errName: "Напишите ваше имя.", errPhone: "Введите номер телефона полностью.",
+      cta: "Записаться", demoNote: "Вне Telegram это демо-режим: запись мастеру не отправляется.",
+      doneTitle: "Демо: запись готова", dName: "Имя", dSvc: "Услуга", dWhen: "Время", dPrice: "Цена",
+      footL: "Барбершоп «Qaychi»", footR: "Чиланзар, Ташкент",
+      days: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
+      months: ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"],
+      svc: { soch: "Стрижка", soqol: "Бритьё бороды", kombo: "Стрижка + борода", bola: "Детская стрижка", yuv: "Мытьё и укладка" }
+    },
+    en: {
+      navUsta: "Barber", navSvc: "Services", navBook: "Book",
+      shop: "Barbershop · Tashkent", h1a: "Clean cut.", h1b: "Sharp line.",
+      lead: "I'm Jasur Karimov, a barber since 2014. I give every client their own time slot and never rush.",
+      f1: "years of experience", f2: "clients", f3: "average rating",
+      bio1: "I started in a small room in Chilanzar. Later I finished classic shaving and fade cutting courses in Istanbul.",
+      bio2: "I work alone, so you won't wait past your booked time. Straight-razor shaves and modern styles are what I know best.",
+      hours: "Mon–Sat 10:00–21:00 · Sun 11:00–18:00",
+      priceNote: "Prices in UZS", min: "min", book: "Book", cur: "UZS",
+      bookEyebrow: "Online booking", bookTitle: "Book a visit",
+      step1: "1 · Service", step2: "2 · Day", step3: "3 · Time",
+      lblName: "Your name", phName: "e.g. Aziz", lblPhone: "Phone",
+      today: "Today", pickDay: "Pick a day first", noSlots: "No free time left on this day",
+      sumEmpty: "Pick a service, day and time", sumSvc: "Pick a day and time",
+      errSvc: "Pick a service.", errDay: "Pick a day.", errTime: "Pick a time.",
+      errName: "Enter your name.", errPhone: "Enter the full phone number.",
+      cta: "Book", demoNote: "Outside Telegram this is a demo: the booking is not sent to the barber.",
+      doneTitle: "Demo: booking ready", dName: "Name", dSvc: "Service", dWhen: "Time", dPrice: "Price",
+      footL: "Qaychi barbershop", footR: "Chilanzar, Tashkent",
+      days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      svc: { soch: "Haircut", soqol: "Beard shave", kombo: "Haircut + beard", bola: "Kids' haircut", yuv: "Wash & styling" }
+    }
+  };
+
+  var SERVICES = [
+    { id: "soch", min: 40, price: 60000 },
+    { id: "soqol", min: 30, price: 40000 },
+    { id: "kombo", min: 60, price: 90000 },
+    { id: "bola", min: 30, price: 45000 },
+    { id: "yuv", min: 20, price: 25000 }
+  ];
+
+  /* ---------- helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function svcById(id) { return SERVICES.filter(function (s) { return s.id === id; })[0]; }
+  function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  /* ---------- state ---------- */
+  var params = new URLSearchParams(location.search);
+  var busy = {};
+  (params.get("busy") || "").split(",").forEach(function (c) { if (c) busy[c] = true; });
+
+  function pickLang() {
+    var cand = [params.get("lang"), safeGet("lang"), tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code];
+    for (var i = 0; i < cand.length; i++) { if (cand[i] && T[cand[i]]) return cand[i]; }
+    return "uz";
+  }
+  var state = { lang: pickLang(), svc: null, day: null, time: null };
+  function t(k) { return T[state.lang][k]; }
+
+  var today = new Date();
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    days.push({ date: d, key: d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) });
+  }
+  function dayLabel(i) { return i === 0 ? t("today") : t("days")[days[i].date.getDay()]; }
+  function daySub(i) { return days[i].date.getDate() + " " + t("months")[days[i].date.getMonth()]; }
+
+  /* 30-minute cells; a service takes ceil(min/30) cells in a row */
+  function cellsNeeded() { var s = state.svc ? svcById(state.svc) : null; return s ? Math.ceil(s.min / 30) : 1; }
+  function slotsFor(i) {
+    var day = days[i], dow = day.date.getDay();
+    var open = dow === 0 ? 11 * 60 : 10 * 60, close = dow === 0 ? 18 * 60 : 21 * 60;
+    var n = cellsNeeded(), now = new Date();
+    var nowMin = now.getHours() * 60 + now.getMinutes();
+    var out = [];
+    for (var m = open; m + n * 30 <= close; m += 30) {
+      var ok = !(i === 0 && m <= nowMin + 15);
+      for (var k = 0; k < n && ok; k++) {
+        var c = m + k * 30;
+        if (busy[day.key + "_" + pad(Math.floor(c / 60)) + ":" + pad(c % 60)]) ok = false;
+      }
+      out.push({ label: pad(Math.floor(m / 60)) + ":" + pad(m % 60), free: ok });
+    }
+    return out;
+  }
+
+  /* ---------- rendering ---------- */
+  function applyStatic() {
+    document.documentElement.lang = state.lang;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function (el) { el.textContent = t(el.getAttribute("data-i")); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-ph]"), function (el) { el.setAttribute("placeholder", t(el.getAttribute("data-ph"))); });
+    Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === state.lang)); });
+    $("demoNote").hidden = inTg;
+    if (inTg && tg.MainButton) { try { tg.MainButton.setText(t("cta")); } catch (e) {} }
+  }
+  function renderLists() {
+    $("svcList").innerHTML = SERVICES.map(function (s) {
+      return '<li><span class="name">' + esc(t("svc")[s.id]) + '</span><span class="price">' + fmt(s.price) + ' ' + esc(t("cur")) +
+        '</span><span class="meta">' + s.min + ' ' + esc(t("min")) + '</span>' +
+        '<button class="link-btn go" type="button" data-svc="' + s.id + '">' + esc(t("book")) + '</button></li>';
+    }).join("");
+    $("svcChips").innerHTML = SERVICES.map(function (s) {
+      return '<button class="chip" type="button" data-svc="' + s.id + '" aria-pressed="false">' + esc(t("svc")[s.id]) +
+        '<small>' + fmt(s.price) + ' ' + esc(t("cur")) + '</small></button>';
+    }).join("");
+    $("dayChips").innerHTML = days.map(function (dd, i) {
+      return '<button class="chip" type="button" data-day="' + i + '" aria-pressed="false">' + esc(dayLabel(i)) + '<small>' + esc(daySub(i)) + '</small></button>';
+    }).join("");
+  }
+  function renderSlots() {
+    var box = $("slots");
+    if (state.day === null) { box.innerHTML = '<span class="hint">' + esc(t("pickDay")) + '</span>'; return; }
+    var list = slotsFor(state.day);
+    if (state.time && !list.some(function (s) { return s.label === state.time && s.free; })) state.time = null;
+    if (!list.some(function (s) { return s.free; })) { box.innerHTML = '<span class="hint">' + esc(t("noSlots")) + '</span>'; return; }
+    box.innerHTML = list.map(function (s) {
+      return '<button class="chip" type="button" data-time="' + s.label + '" aria-pressed="' + (state.time === s.label) + '"' + (s.free ? "" : " disabled") + '>' + s.label + '</button>';
+    }).join("");
+  }
+  function sync() {
+    Array.prototype.forEach.call(document.querySelectorAll("#svcChips .chip"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-svc") === state.svc)); });
+    Array.prototype.forEach.call(document.querySelectorAll("#dayChips .chip"), function (b) { b.setAttribute("aria-pressed", String(state.day !== null && +b.getAttribute("data-day") === state.day)); });
+    renderSlots();
+    var s = state.svc ? svcById(state.svc) : null, el = $("sum");
+    if (s && state.day !== null && state.time) {
+      el.innerHTML = esc(t("svc")[s.id]) + ' · ' + esc(daySub(state.day)) + ' · ' + state.time + '<br><b>' + fmt(s.price) + ' ' + esc(t("cur")) + '</b>';
+    } else if (s) {
+      el.innerHTML = esc(t("svc")[s.id]) + ' · <b>' + fmt(s.price) + ' ' + esc(t("cur")) + '</b>. ' + esc(t("sumSvc"));
+    } else {
+      el.textContent = t("sumEmpty");
+    }
+  }
+  function renderAll() { applyStatic(); renderLists(); sync(); }
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    if (b.hasAttribute("data-lang")) {
+      state.lang = b.getAttribute("data-lang"); safeSet("lang", state.lang); renderAll();
+    } else if (b.hasAttribute("data-svc")) {
+      state.svc = b.getAttribute("data-svc"); sync();
+      if (b.classList.contains("go")) $("bron").scrollIntoView();
+    } else if (b.hasAttribute("data-day")) {
+      state.day = +b.getAttribute("data-day"); state.time = null; sync();
+    } else if (b.hasAttribute("data-time")) {
+      state.time = b.getAttribute("data-time"); sync();
+    }
+  });
+
+  function normalizePhone(digits) {
+    if (digits.length === 9) return "+998" + digits;
+    return "+" + digits;
+  }
+
+  function submit() {
+    var name = $("nm").value.trim();
+    var digits = $("ph").value.replace(/\D/g, "");
+    var err = "";
+    if (!state.svc) err = t("errSvc");
+    else if (state.day === null) err = t("errDay");
+    else if (!state.time) err = t("errTime");
+    else if (name.length < 2) err = t("errName");
+    else if (digits.length < 9 || digits.length > 15) err = t("errPhone");
+    $("err").textContent = err;
+    if (err) {
+      if (inTg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred("error"); } catch (e) {} }
+      return;
+    }
+    var payload = { v: 1, svc: state.svc, date: days[state.day].key, time: state.time, name: name, phone: normalizePhone(digits), lang: state.lang };
+    if (inTg) {
+      try { tg.sendData(JSON.stringify(payload)); } catch (e) { $("err").textContent = String(e); }
+      return;
+    }
+    var s = svcById(state.svc);
+    $("bookCard").innerHTML = '<div class="done"><h3>' + esc(t("doneTitle")) + '</h3><dl>' +
+      '<dt>' + esc(t("dName")) + '</dt><dd>' + esc(name) + '</dd>' +
+      '<dt>' + esc(t("dSvc")) + '</dt><dd>' + esc(t("svc")[s.id]) + ' (' + s.min + ' ' + esc(t("min")) + ')</dd>' +
+      '<dt>' + esc(t("dWhen")) + '</dt><dd>' + esc(dayLabel(state.day)) + ', ' + esc(daySub(state.day)) + ', ' + state.time + '</dd>' +
+      '<dt>' + esc(t("dPrice")) + '</dt><dd>' + fmt(s.price) + ' ' + esc(t("cur")) + '</dd></dl></div>';
+  }
+  $("submit").addEventListener("click", submit);
+  if (inTg && tg.MainButton) { try { tg.MainButton.show(); tg.MainButton.onClick(submit); } catch (e) {} }
+
+  var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (u && u.first_name) $("nm").value = u.first_name;
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
