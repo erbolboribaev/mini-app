@@ -110,7 +110,6 @@ h2 { font-size: clamp(34px, 8vw, 48px); }
 .summary .sum { min-width: 0; font-size: 15px; }
 .summary .sum b { font-family: var(--font-mono); }
 .cta { font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 6px; padding: 14px 22px; cursor: pointer; min-height: 48px; }
-.tg .cta { display: none; }
 .done { display: grid; gap: 14px; }
 .done h3 { font-size: 36px; color: var(--ok); }
 .done dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; }
@@ -195,7 +194,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     <p class="note" id="demoNote" hidden data-i="demoNote"></p>
   </section>
 
-  <footer><span data-i="footL"></span><span data-i="footR"></span></footer>
+  <footer><span data-i="footL"></span><span data-i="footR"></span><span>v3</span></footer>
 </main>
 
 <script>
@@ -225,6 +224,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       sumEmpty: "Xizmat, kun va vaqtni tanlang", sumSvc: "Kun va vaqtni tanlang",
       errSvc: "Xizmatni tanlang.", errDay: "Kunni tanlang.", errTime: "Vaqtni tanlang.",
       errName: "Ismingizni yozing.", errPhone: "Telefon raqamini to’liq yozing.",
+      sendFail: "Bron yuborilmadi. Botda /start yozing va pastdagi «Bron qilish» tugmasi orqali oching.",
       cta: "Bron qilish", demoNote: "Telegramdan tashqarida bu namuna rejimi: bron ustaga yuborilmaydi.",
       doneTitle: "Namuna: bron tayyor", dName: "Ism", dSvc: "Xizmat", dWhen: "Vaqt", dPrice: "Narx",
       footL: "Qaychi sartaroshxonasi", footR: "Chilonzor, Toshkent",
@@ -248,6 +248,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       sumEmpty: "Выберите услугу, день и время", sumSvc: "Выберите день и время",
       errSvc: "Выберите услугу.", errDay: "Выберите день.", errTime: "Выберите время.",
       errName: "Напишите ваше имя.", errPhone: "Введите номер телефона полностью.",
+      sendFail: "Запись не отправлена. Напишите боту /start и откройте приложение кнопкой «Записаться» внизу.",
       cta: "Записаться", demoNote: "Вне Telegram это демо-режим: запись мастеру не отправляется.",
       doneTitle: "Демо: запись готова", dName: "Имя", dSvc: "Услуга", dWhen: "Время", dPrice: "Цена",
       footL: "Барбершоп «Qaychi»", footR: "Чиланзар, Ташкент",
@@ -271,6 +272,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       sumEmpty: "Pick a service, day and time", sumSvc: "Pick a day and time",
       errSvc: "Pick a service.", errDay: "Pick a day.", errTime: "Pick a time.",
       errName: "Enter your name.", errPhone: "Enter the full phone number.",
+      sendFail: "The booking was not sent. Send /start to the bot and open the app with the button at the bottom.",
       cta: "Book", demoNote: "Outside Telegram this is a demo: the booking is not sent to the barber.",
       doneTitle: "Demo: booking ready", dName: "Name", dSvc: "Service", dWhen: "Time", dPrice: "Price",
       footL: "Qaychi barbershop", footR: "Chilanzar, Tashkent",
@@ -351,7 +353,6 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     Array.prototype.forEach.call(document.querySelectorAll("[data-ph]"), function (el) { el.setAttribute("placeholder", t(el.getAttribute("data-ph"))); });
     Array.prototype.forEach.call(document.querySelectorAll(".langs button"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === state.lang)); });
     $("demoNote").hidden = inTg;
-    if (inTg && tg.MainButton) { try { tg.MainButton.setText(t("cta")); } catch (e) {} }
   }
   function renderLists() {
     $("svcList").innerHTML = SERVICES.map(function (s) {
@@ -436,12 +437,21 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
     else if (digits.length < 9 || digits.length > 15) err = t("errPhone");
     $("err").textContent = err;
     if (err) {
+      $("err").scrollIntoView({ block: "center" });
       if (inTg && tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred("error"); } catch (e) {} }
       return;
     }
     var payload = { v: 2, svcs: state.svcs.slice(), date: days[state.day].key, time: state.time, name: name, phone: normalizePhone(digits), lang: state.lang };
     if (inTg) {
-      try { tg.sendData(JSON.stringify(payload)); } catch (e) { $("err").textContent = String(e); }
+      $("submit").disabled = true;
+      try { tg.sendData(JSON.stringify(payload)); }
+      catch (e) { $("err").textContent = String(e); $("submit").disabled = false; return; }
+      // sendData muvaffaqiyatli bo'lsa Telegram sahifani o'zi yopadi. Yopilmasa, tugma orqali ochilmagan.
+      setTimeout(function () {
+        $("submit").disabled = false;
+        $("err").textContent = t("sendFail");
+        $("err").scrollIntoView({ block: "center" });
+      }, 2500);
       return;
     }
     var tt = totals();
@@ -452,7 +462,6 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       '<dt>' + esc(t("dPrice")) + '</dt><dd>' + fmt(tt.price) + ' ' + esc(t("cur")) + '</dd></dl></div>';
   }
   $("submit").addEventListener("click", submit);
-  if (inTg && tg.MainButton) { try { tg.MainButton.show(); tg.MainButton.onClick(submit); } catch (e) {} }
 
   var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
   if (u && u.first_name) $("nm").value = u.first_name;
@@ -461,5 +470,4 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 })();
 </script>
 </body>
-</html>
 </html>
